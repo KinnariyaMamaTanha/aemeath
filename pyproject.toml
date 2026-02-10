@@ -1,0 +1,23 @@
+[project]
+name = "aemeath"
+version = "0.1.0"
+description = "A lightweight desktop pet application featuring aemeath"
+requires-python = ">=3.10"
+dependencies = [
+    "PySide6>=6.5.0",
+]
+
+[project.scripts]
+aemeath = "aemeath.app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aemeath"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.18.0",
+]
