@@ -70,22 +70,23 @@ aemeath
 
 无需 Python 环境即可运行的单文件可执行程序。构建配置已做跨平台适配，支持 Linux 和 Windows。
 
-### 本地构建
+### 方式一：使用 Nuitka（推荐）⚡
+
+Nuitka 将 Python 编译为 C 代码，生成原生执行文件，具有更快的速度和更小的体积。
 
 ```bash
-# 安装构建依赖
 uv sync --dev
+uv run python build_nuitka.py
+```
 
-# 构建（输出到 dist/aemeath 或 dist/aemeath.exe）
+### 方式二：使用 PyInstaller
+
+```bash
+uv sync --dev
 uv run pyinstaller aemeath.spec --clean
 ```
 
-| 平台 | 产物 | 说明 |
-|------|------|------|
-| Linux | `dist/aemeath` | ≈67MB，已排除未使用的 Qt 模块并 strip 调试符号 |
-| Windows | `dist/aemeath.exe` | 已排除未使用的 Qt 模块，无控制台窗口 |
-
-> **注意**：PyInstaller 无法交叉编译，必须在目标操作系统上执行构建。
+> **注意**：两种方式均无法交叉编译，必须在目标操作系统上执行构建。
 
 ## ⚙️ 配置
 

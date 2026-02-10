@@ -1,0 +1,96 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            artifact: aemeath-linux
+            exe_name: aemeath
+          - os: windows-latest
+            artifact: aemeath-windows
+            exe_name: aemeath.exe
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.os }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      # Linux: install system dependencies for PySide6
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1 libgl1-mesa-glx libglib2.0-0 libfontconfig1 \
+            libxkbcommon0 libdbus-1-3 patchelf ccache
+
+      - name: Build with Nuitka
+        run: uv run python build_nuitka.py
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p release
+          cp dist/${{ matrix.exe_name }} release/${{ matrix.exe_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: release/${{ matrix.exe_name }}
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          cp artifacts/aemeath-linux/aemeath   release-assets/aemeath-linux
+          cp artifacts/aemeath-windows/aemeath.exe release-assets/aemeath-windows.exe
+          chmod +x release-assets/aemeath-linux
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release-assets/aemeath-linux
+            release-assets/aemeath-windows.exe

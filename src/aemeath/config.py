@@ -12,7 +12,13 @@ from pathlib import Path
 
 
 def _find_assets_dir() -> Path:
-    """Locate the assets directory relative to package or working directory."""
+    """Locate the assets directory relative to package or working directory.
+    
+    Supports:
+    - PyInstaller single-file mode (sys._MEIPASS)
+    - Nuitka single-file mode (alongside __file__)
+    - Development mode (relative to source tree)
+    """
     import sys
 
     # PyInstaller single-file mode: assets are extracted to sys._MEIPASS
@@ -22,8 +28,17 @@ def _find_assets_dir() -> Path:
         if assets.exists():
             return assets
 
-    # Try relative to package source tree: src/aemeath/config.py -> ../../assets
+    # Nuitka or PyInstaller: check alongside the module file
+    # In Nuitka onefile mode, __file__ points to extracted temp location
     pkg_dir = Path(__file__).resolve().parent
+    
+    # First try: assets next to the package (typical for Nuitka)
+    assets = pkg_dir.parent / "assets"
+    if assets.exists():
+        return assets
+    
+    # Second try: relative to package source tree (development mode)
+    # src/aemeath/config.py -> ../../assets
     project_dir = pkg_dir.parent.parent
     assets = project_dir / "assets"
     if assets.exists():
